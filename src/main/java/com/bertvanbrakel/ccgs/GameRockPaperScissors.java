@@ -27,4 +27,9 @@ public class GameRockPaperScissors implements Game<HAND> {
                     "Expected one of " + HAND.values(), e);
         }
     }
+
+	@Override
+	public String getMatcheParams() {
+		return null;
+	}
 }

@@ -12,4 +12,6 @@ public interface Game<T> {
      * Parse a players response to determine their move
      */
     public T parseResponse(Player player, String response) throws InvalidResponseException;
+
+	public String getMatcheParams();
 }

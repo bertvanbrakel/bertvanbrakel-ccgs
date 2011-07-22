@@ -46,6 +46,29 @@ public class GameServerTest {
         server.stop();
     }
 
+	public static void main(String[] args) throws Exception {
+		final GameServerTest test = new GameServerTest();
+		test.setup();
+
+		final CapturingTestServer players = test.newPlayers();
+		players.start();
+		test.registerPlayers(players);
+
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					test.teardown();
+					players.stop();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}));
+		while (true) {
+			Thread.sleep(1000);
+		}
+	}
     @Test
     public void test_register_callback_url() throws Exception {
         final String callbackURL = generateRandomCallbackUrl();
@@ -163,6 +186,8 @@ public class GameServerTest {
         });
         try {
             players.start();
+            
+            String gameParams = null;
 
             final Player alwaysRockPlayer = new Player(players.getBaseHttpUrl() + "/alwaysRock");
             final Player alwaysScissorsPlayer = new Player(players.getBaseHttpUrl() + "/alwaysScissors");
@@ -170,25 +195,25 @@ public class GameServerTest {
             final PlayerResult<HAND> alwaysScissorsResult = new PlayerResult<HAND>(alwaysScissorsPlayer, HAND.SCISSORS);
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer));
+                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE))));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer));
+                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO))));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer));
+                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW))));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer));
+                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW))));
             }
@@ -201,6 +226,24 @@ public class GameServerTest {
     @Test
     public void test_register_players() throws Exception {
 
+    	CapturingTestServer players = newPlayers();
+        try {
+            players.start();
+            registerPlayers(players);
+        } finally {
+            players.stop();
+        }
+    }
+    
+    
+    private void registerPlayers(CapturingTestServer players){
+    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysRock");
+    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysScissors");
+    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysPaper");
+    	server.registerPlayer(players.getBaseHttpUrl() + "/loopRockPaperScissors");
+    }
+
+    private CapturingTestServer newPlayers(){
         final CapturingTestServer players = new CapturingTestServer();
         players.addServlet("/alwaysRock", new TestServlet() {
             private static final long serialVersionUID = 6920163754312992180L;
@@ -253,18 +296,8 @@ public class GameServerTest {
                 res.getWriter().flush();
             }
         });
-        try {
-            players.start();
-
-            server.registerPlayer(players.getBaseHttpUrl() + "/alwaysRock");
-            server.registerPlayer(players.getBaseHttpUrl() + "/alwaysScissors");
-            server.registerPlayer(players.getBaseHttpUrl() + "/alwaysPaper");
-            server.registerPlayer(players.getBaseHttpUrl() + "/loopRockPaperScissors");
-        } finally {
-            players.stop();
-        }
+        return players;
     }
-    
     private String generateRandomCallbackUrl(){
     	return "http://my/callback/url1" + counter.getAndIncrement() + UUID.randomUUID().toString();
     }

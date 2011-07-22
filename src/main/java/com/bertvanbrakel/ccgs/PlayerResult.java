@@ -10,6 +10,10 @@ public class PlayerResult<T> {
     final T hand;
     final Exception e;
     private final String errorMsg;
+    
+    private long invokedAt;
+    private long respondedAt;
+    private boolean timedOut = false;
 
     public PlayerResult(final Player player,final T hand) {
         this.player = player;
@@ -42,6 +46,19 @@ public class PlayerResult<T> {
         return errorMsg;
     }
 
+	public void setInvokedAt(long invokeAt) {
+		this.invokedAt = invokeAt;
+	}
+	public long getRespondedAt() {
+		return respondedAt;
+	}
+	public void setRespondedAt(long respondedAt) {
+		this.respondedAt = respondedAt;
+	}
+	public long getInvokedAt() {
+		return invokedAt;
+	}
+
     @Override
     public boolean equals(final Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
@@ -57,5 +74,4 @@ public class PlayerResult<T> {
         return ToStringBuilder.reflectionToString(this,
                 ToStringStyle.SHORT_PREFIX_STYLE);
     }
-
 }

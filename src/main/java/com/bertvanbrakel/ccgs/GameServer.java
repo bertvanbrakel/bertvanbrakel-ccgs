@@ -3,12 +3,9 @@ package com.bertvanbrakel.ccgs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.plaf.ListUI;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -35,6 +33,7 @@ import org.apache.log4j.Logger;
 import com.bertvanbrakel.testserver.TestServer;
 import com.bertvanbrakel.testserver.TestServlet;
 
+//TODO:run rounds in parallel
 public class GameServer<T> {
 
     private HttpClient httpClient;
@@ -46,14 +45,37 @@ public class GameServer<T> {
     //the game being played
     private final Game<T> game;
     //the history of matches and results
-    private final Collection<Match<T>> matches = new ArrayList<Match<T>>();
+    private final List<Match> matches = new ArrayList<Match>();
 
     private Collection<Round> currentRound = new ArrayList<Round>();
 
+    private ViewRenderer renderer = new ViewRenderer();
     
-    private final long roundEverySec = 20;
+    private final long roundEverySec = 2;
+    private final int numMatchesInLatest = 10;
     ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10);
 
+	public static void main(String[] args) throws Exception {
+		Game game = new GameRockPaperScissors();
+		final GameServer server = new GameServer(game);
+
+		try {
+			server.start();
+
+			Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+				@Override
+				public void run() {
+					server.stop();
+				}
+			}));
+			while (true) {
+				Thread.sleep(1000);
+			}
+		} finally {
+			server.stop();
+		}
+	}
+    
     public GameServer(final Game<T> game) {
         this.game = game;
         server.addServlet("/register", new TestServlet() {
@@ -66,12 +88,19 @@ public class GameServer<T> {
                 String callback = req.getParameter("callbackurl");
                 callback = StringUtils.trimToNull(callback);
                 if (callback != null) {
-                    // only allow single registration
-                    registerPlayer(callback);
-                    resp.setStatus(HttpServletResponse.SC_OK);
+                	if( callback.startsWith(getBaseHttpUrl())){
+                        final PrintWriter w = resp.getWriter();
+                        w.println("Invalid param 'callbackurl', can't point back to the game server!");
+                        w.flush();
+                        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);                		
+                	} else {
+                		// only allow single registration
+                		registerPlayer(callback);
+                    	resp.setStatus(HttpServletResponse.SC_OK);
+                	}
                 } else {
                     final PrintWriter w = resp.getWriter();
-                    w.println("Invalid callbackurl param");
+                    w.println("Need to supply a 'callbackurl' param");
                     w.flush();
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 }
@@ -84,15 +113,10 @@ public class GameServer<T> {
             protected void service(final HttpServletRequest req,
                     final HttpServletResponse resp) throws ServletException,
                     IOException {
-                final PrintWriter w = resp.getWriter();
-                w.println("table { border:1px solid; }");
-                w.println("td { padding:3px }");
-                w.println("th { color:orange; text-align:left }");
-                w.println("td.winner { color:green }");
-                w.println("td.loser { color:red }");
-                w.println("td.draw { color:yellow }");
+            	resp.setStatus(HttpServletResponse.SC_OK);
+            	final PrintWriter w = resp.getWriter();
+                renderer.renderStyle(w);
                 w.flush();
-                resp.setStatus(HttpServletResponse.SC_OK);
             }
         });
         server.addServlet("/registrations", new TestServlet() {
@@ -102,18 +126,12 @@ public class GameServer<T> {
             protected void service(final HttpServletRequest req,
                     final HttpServletResponse resp) throws ServletException,
                     IOException {
-                final PrintWriter w = resp.getWriter();
-                w.println("<html><head><title>Registrations</title><meta http-equiv='refresh' content='2'></head><link rel='stylesheet' type='text/css'  href='/style.css' /><body><table>");
-                w.print("<tr><th>Players</th></tr>");
-                for (final Player player : registeredPlayers) {
-                    w.print("<tr><td>");
-                    w.print(player);
-                    w.println("</td></tr>");
-                }
-                w.println("</table></body></html>");
+            	resp.setStatus(HttpServletResponse.SC_OK);            	
+            	final PrintWriter w = resp.getWriter();
+                renderer.renderPlayers(w, registeredPlayers);
                 w.flush();
-                resp.setStatus(HttpServletResponse.SC_OK);
             }
+
         });
         server.addServlet("/matches", new TestServlet() {
             private static final long serialVersionUID = -7210997041334032523L;
@@ -122,68 +140,56 @@ public class GameServer<T> {
             protected void service(final HttpServletRequest req,
                     final HttpServletResponse resp) throws ServletException,
                     IOException {
-                final DateFormat format = new SimpleDateFormat( "HH:m:s" );
-                final PrintWriter w = resp.getWriter();
-                w.println("<html><head><title>Matches</title><meta http-equiv='refresh' content='2'></head><link rel='stylesheet' type='text/css'  href='/style.css' /><body><table>");
-                w.print("<tr><th>Match#</th><th>Start</th><th>End</th></tr>");
-                int count  = 1;
-                for (final Match<T> match : matches) {
-                    w.print("<tr><td>");
-                    w.print(count++);
-                    w.print("</td><td>");
-                    w.print( format.format(new Date(match.startedAt)));
-                    w.print("</td><td>");
-                    w.print( format.format(new Date(match.endedAt)));
-                    w.print("</td></tr>");
-
-                    w.println("<tr><td colspan='3'>");
-                    w.println( "<table>" );
-                    w.println( "<tr><th>Player 1</th><th>Played</th><th>Player 2</th><th>Played</th><th>Winner</th></tr>" );
-                    for( final RoundResult<T> result:match.results){
-                        String cssClass1 = null;
-                        String cssClass2 = null;
-                        String winner = null;
-                        switch(result.getWinner()){
-                        case DRAW:
-                            cssClass1 = "draw";
-                            cssClass2 = "draw";
-                            winner = "Draw";
-                            break;
-                        case ONE:
-                            cssClass1 = "winner";
-                            cssClass2 = "loser";
-                            winner = "Player 1";
-                            break;
-                        case TWO:
-                            cssClass1 = "loser";
-                            cssClass2 = "winner";
-                            winner = "Player 2";
-                            break;
-
-                        }
-
-                        w.println( String.format("<tr><td class='%s'>", cssClass1 ) );
-                        w.println(result.getPlayer1().player);
-                        w.println( "</td><td>" );
-                        w.println(result.getPlayer1().hand);
-                        w.println( String.format("</td><td class='%s'>", cssClass2 ) );
-                        w.println(result.getPlayer2().player);
-                        w.println( "</td><td>" );
-                        w.println(result.getPlayer2().hand);
-                        w.println( "</td><td>" );
-                        w.println(winner);
-                        w.println( "</td></tr>" );
-                    }
-                    w.println( "</table>" );
-                    w.println("</td></tr>");
-                }
-                w.println("</table></body></html>");
+            	resp.setStatus(HttpServletResponse.SC_OK);
+            	final PrintWriter w = resp.getWriter();
+            	renderer.renderMatches(w, matches, -1);
                 w.flush();
+            }
+        });
+        server.addServlet("/latestMatches", new TestServlet() {
+            private static final long serialVersionUID = -7210997041334032523L;
+
+            @Override
+            protected void service(final HttpServletRequest req,
+                    final HttpServletResponse resp) throws ServletException,
+                    IOException {
+            	resp.setStatus(HttpServletResponse.SC_OK);
+            	final PrintWriter w = resp.getWriter();
+            	renderer.renderMatches(w, matches, paramAsInt(req,"num", -1));
+                w.flush();
+            }
+        });
+        server.addServlet("/", new TestServlet() {
+			private static final long serialVersionUID = -5685800051328504498L;
+
+			@Override
+            protected void service(final HttpServletRequest req,
+                    final HttpServletResponse resp) throws ServletException,
+                    IOException {
                 resp.setStatus(HttpServletResponse.SC_OK);
+                final PrintWriter w = resp.getWriter();
+                renderer.renderIndex(w);
+                w.flush();
             }
         });
     }
+    
+	private int paramAsInt(HttpServletRequest req, String paramName,
+			int defaultVal) {
+		String val = req.getParameter(paramName);
+		if (val != null) {
+			try {
+				return Integer.parseInt(val);
+			} catch (Exception e) {
+				// do nothing
+			}
+		}
+		return defaultVal;
+	}
 
+    /**
+     * Start the game server in a non blocking mode
+     */
     public void start() throws Exception {
         final DefaultHttpClient client = new DefaultHttpClient();
 
@@ -231,31 +237,20 @@ public class GameServer<T> {
     }
 
     public void runRound() {
-        final long startedAt = System.currentTimeMillis();
-        final List<Round> rounds = generateRounds();
-        Collections.shuffle(rounds);
-        this.currentRound = new ArrayList<Round>(rounds);
-        final Collection<RoundResult<T>> results = new ArrayList<RoundResult<T>>();
-        for (final Round round : rounds) {
-            results.add(playRound(round));
-        }
-        final long endedAt = System.currentTimeMillis();
+		final long startedAt = System.currentTimeMillis();
+		final List<Round> rounds = generateRounds();
+		Collections.shuffle(rounds);
+		this.currentRound = new ArrayList<Round>(rounds);
+		final Collection<RoundResult<T>> results = new ArrayList<RoundResult<T>>();
+		String matchParams = game.getMatcheParams();
+		for (final Round round : rounds) {
+			results.add(playRound(round, matchParams));
+		}
+		final long endedAt = System.currentTimeMillis();
 
-        matches.add(new Match<T>( startedAt,endedAt,results));
+		matches.add(new Match<T>(startedAt, endedAt, results));
     }
 
-    public static class Match<T> {
-        private final long startedAt;
-        private final long endedAt;
-        private final Collection<RoundResult<T>> results;
-
-        public Match(final long startedAt, final long endedAt,
-                final Collection<RoundResult<T>> results) {
-            this.startedAt = startedAt;
-            this.endedAt = endedAt;
-            this.results = results;
-        }
-    }
     protected List<Round> generateRounds() {
         final List<Player> players = new ArrayList<Player>(registeredPlayers);
         // generate list of opponents
@@ -263,10 +258,9 @@ public class GameServer<T> {
         if (players.size() == 1) {
             rounds.add(new Round(players.get(0)));
         } else {
-            for (final Iterator<Player> iter = players.iterator(); iter
-                    .hasNext();) {
+            for (final Iterator<Player> iter = players.iterator(); iter.hasNext();) {
                 final Player player1 = iter.next();
-                // don't use this url again
+                // don't use this player again for subsequent rounds in this match
                 iter.remove();
                 for (final Player player2 : players) {
                     rounds.add(new Round(player1, player2));
@@ -276,9 +270,9 @@ public class GameServer<T> {
         return rounds;
     }
 
-    protected RoundResult<T> playRound(final Round round) {
-        final PlayerResult<T> result1 = hitPlayer(round.getPlayer1());
-        final PlayerResult<T> result2 = hitPlayer(round.getPlayer2());
+    protected RoundResult<T> playRound(final Round round, String gameParams) {
+        final PlayerResult<T> result1 = hitPlayer(round.getPlayer1(), gameParams);
+        final PlayerResult<T> result2 = hitPlayer(round.getPlayer2(), gameParams);
         WINNER winner;
         if (result1.getHand() != null && result2.getHand() != null) {
             winner = game.calculateWinner(result1.getHand(), result2.getHand());
@@ -292,11 +286,24 @@ public class GameServer<T> {
         return new RoundResult<T>(result1, result2, winner);
     }
 
-    private PlayerResult<T> hitPlayer(final Player player) {
-        final HttpPost get = new HttpPost(player.getUrl());
+    private PlayerResult<T> hitPlayer(final Player player, String gameParams) {
+    	String url = player.getUrl();
+		if (gameParams != null) {
+			if (!url.contains("?")) {
+				url += "?";
+			} else if (!url.endsWith("?")) {
+				url += "&";
+			}
+			url += gameParams;
+		}
+        final HttpPost get = new HttpPost(url);
         HttpResponse response = null;
+        long invokeAt = System.currentTimeMillis();
+        long respondedAt = -1;
         try {
+        	//TODO:add timeout
             response = httpClient.execute(get);
+            respondedAt = System.currentTimeMillis();
         } catch (final ClientProtocolException e) {
             LOG.warn("Error contacting player " + player, e);
         } catch (final IOException e) {
@@ -312,6 +319,7 @@ public class GameServer<T> {
                             + response.getStatusLine().getStatusCode());
         }
 
+        PlayerResult result;
         final HttpEntity entity = response.getEntity();
         if (entity != null) {
             InputStream is = null;
@@ -319,26 +327,29 @@ public class GameServer<T> {
                 is = entity.getContent();
                 final String hand = IOUtils.toString(is).toUpperCase();
                 try {
-                    return new PlayerResult<T>(player, game.parseResponse(
-                            player, hand));
+                    result = new PlayerResult<T>(player, game.parseResponse(player, hand));
                 } catch (final InvalidResponseException e) {
                     return new PlayerResult<T>(player, e);
                 }
             } catch (final IllegalStateException e) {
                 LOG.warn("Error contacting player " + player, e);
-                return new PlayerResult<T>(player, "Can't contact player "
+                result = new PlayerResult<T>(player, "Can't contact player "
                         + player, e);
             } catch (final IOException e) {
                 LOG.warn("Error contacting player " + player, e);
-                return new PlayerResult<T>(player, "Can't contact player "
+                result = new PlayerResult<T>(player, "Can't contact player "
                         + player, e);
             } finally {
                 IOUtils.closeQuietly(is);
             }
         } else {
             LOG.warn("Empty body when contacting player " + player);
-            return new PlayerResult<T>(player,
+            result = new PlayerResult<T>(player,
                     "Empty body when contacting player " + player);
         }
+       
+        result.setInvokedAt(invokeAt);
+        result.setRespondedAt(respondedAt);
+        return result;
     }
 }
