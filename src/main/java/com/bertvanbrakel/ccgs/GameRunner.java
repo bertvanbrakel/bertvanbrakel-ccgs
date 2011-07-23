@@ -67,7 +67,10 @@ public class GameRunner<T> {
 		if (LOG.isInfoEnabled()) {
 			LOG.info("registering player " + player);
 		}
-		registeredPlayers.add(player);
+		boolean added = registeredPlayers.add(player);
+		if (added) {
+			listener.onPlayerJoined(player);
+		}
 	}
 
 	public Collection<Player> getPlayers() {
@@ -105,6 +108,7 @@ public class GameRunner<T> {
 		} catch (Exception e){
 			executor.shutdownNow();
 			httpClient = null;
+			listener.onGameEnd(game);
 		}
     }
 

@@ -13,6 +13,15 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 
 	private final Collection<GameListener<T>> listeners = new CopyOnWriteArraySet<GameListener<T>>();	
 	
+	public GameListenerHelper() {
+	}
+
+	public GameListenerHelper(GameListener<T>... listeners) {
+		for (GameListener<T> listener : listeners) {
+			register(listener);
+		}
+	}
+
 	public void register(GameListener<T> listener){
 		notNull(listener,"null listener");
 		listeners.add(listener);

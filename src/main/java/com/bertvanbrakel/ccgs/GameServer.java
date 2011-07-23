@@ -52,7 +52,7 @@ public class GameServer<T> {
     
     public GameServer(final Game<T> game) {
     	this.renderer = new ViewRenderer<T>();
-    	this.gameRunner = new GameRunner<T>(game, new GameOptions(), this.renderer);
+    	this.gameRunner = new GameRunner<T>(game, new GameOptions(), new GameListenerHelper<T>(this.renderer));
         registerServlets();
     }
     
