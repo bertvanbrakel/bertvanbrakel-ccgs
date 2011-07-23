@@ -2,6 +2,12 @@ package com.bertvanbrakel.ccgs;
 
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.MatchResults;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.RoundResult;
+
 public class LoggingListener<T> implements GameListener<T> {
 
 	private static final Logger LOG = Logger.getLogger(LoggingListener.class);

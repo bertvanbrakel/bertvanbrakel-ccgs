@@ -7,6 +7,12 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.MatchResults;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.RoundResult;
+
 public final class GameListenerHelper<T> implements GameListener<T> {
 	
 	private static final Logger LOG = Logger.getLogger(GameListenerHelper.class);

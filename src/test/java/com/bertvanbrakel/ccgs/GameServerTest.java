@@ -32,6 +32,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.bertvanbrakel.ccgs.game.rockpaperscissors.GameRockPaperScissors;
+import com.bertvanbrakel.ccgs.game.rockpaperscissors.HAND;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.PlayerResult;
+import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.RoundResult;
 import com.bertvanbrakel.testserver.TestServlet;
 import com.bertvanbrakel.testserver.capturing.CapturingTestServer;
 public class GameServerTest {

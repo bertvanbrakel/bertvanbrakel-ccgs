@@ -1,4 +1,4 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.model;
 
 public class PlayerStatistics {
 

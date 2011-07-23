@@ -1,4 +1,4 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.model;
 
 import java.util.Collection;
 import java.util.Collections;

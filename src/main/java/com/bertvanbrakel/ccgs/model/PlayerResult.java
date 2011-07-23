@@ -1,4 +1,4 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.model;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -44,6 +44,10 @@ public class PlayerResult<T> {
     }
     public String getErrorMsg() {
         return errorMsg;
+    }
+    
+    public Player getPlayer(){
+    	return player;
     }
 
 	public void setInvokedAt(long invokeAt) {

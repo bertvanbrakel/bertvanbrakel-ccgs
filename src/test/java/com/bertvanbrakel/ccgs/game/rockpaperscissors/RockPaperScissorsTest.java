@@ -1,8 +1,12 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.game.rockpaperscissors;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+
+import com.bertvanbrakel.ccgs.WINNER;
+import com.bertvanbrakel.ccgs.game.rockpaperscissors.GameRockPaperScissors;
+import com.bertvanbrakel.ccgs.game.rockpaperscissors.HAND;
 
 public class RockPaperScissorsTest {
     @Test

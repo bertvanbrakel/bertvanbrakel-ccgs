@@ -1,4 +1,7 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.game.rockpaperscissors;
+
+import com.bertvanbrakel.ccgs.WINNER;
+
 public enum HAND {
     PAPER,ROCK,SCISSORS,FORFEIT;
 

@@ -1,5 +1,7 @@
 package com.bertvanbrakel.ccgs;
 
+import com.bertvanbrakel.ccgs.model.Player;
+
 
 public class InvalidResponseException extends Exception {
 

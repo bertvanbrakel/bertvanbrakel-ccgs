@@ -26,6 +26,13 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.MatchResults;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.PlayerResult;
+import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.RoundResult;
+
 //TODO:run rounds in parallel
 public class GameRunner<T> {
 

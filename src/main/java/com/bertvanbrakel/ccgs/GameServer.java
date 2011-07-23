@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.game.rockpaperscissors.GameRockPaperScissors;
 import com.bertvanbrakel.testserver.TestServer;
 import com.bertvanbrakel.testserver.TestServlet;
 

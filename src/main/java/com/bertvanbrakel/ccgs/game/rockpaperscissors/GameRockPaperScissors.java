@@ -1,6 +1,12 @@
-package com.bertvanbrakel.ccgs;
+package com.bertvanbrakel.ccgs.game.rockpaperscissors;
 
 import org.apache.commons.lang.StringUtils;
+
+import com.bertvanbrakel.ccgs.Game;
+import com.bertvanbrakel.ccgs.GameServer;
+import com.bertvanbrakel.ccgs.InvalidResponseException;
+import com.bertvanbrakel.ccgs.WINNER;
+import com.bertvanbrakel.ccgs.model.Player;
 
 public class GameRockPaperScissors implements Game<HAND> {
 

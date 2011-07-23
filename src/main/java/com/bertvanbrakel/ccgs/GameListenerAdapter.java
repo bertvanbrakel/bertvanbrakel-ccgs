@@ -1,5 +1,11 @@
 package com.bertvanbrakel.ccgs;
 
+import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.MatchResults;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.RoundResult;
+
 
 public class GameListenerAdapter<T> implements GameListener<T> {
 

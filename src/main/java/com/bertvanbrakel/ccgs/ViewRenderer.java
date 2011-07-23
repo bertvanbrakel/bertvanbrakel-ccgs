@@ -9,6 +9,11 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.MatchResults;
+import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.RoundResult;
+
 public class ViewRenderer<T> extends GameListenerAdapter<T> {
 
 	private List<MatchResults<T>> matches = new ArrayList<MatchResults<T>>();
@@ -92,13 +97,13 @@ public class ViewRenderer<T> extends GameListenerAdapter<T> {
                 }
 
                 w.println( String.format("<tr><td class='%s'>", cssClass1 ) );
-                w.println(result.getPlayer1().player);
+                w.println(result.getPlayer1().getPlayer());
                 w.println( "</td><td>" );
-                w.println(result.getPlayer1().hand);
+                w.println(result.getPlayer1().getHand());
                 w.println( String.format("</td><td class='%s'>", cssClass2 ) );
-                w.println(result.getPlayer2().player);
+                w.println(result.getPlayer2().getPlayer());
                 w.println( "</td><td>" );
-                w.println(result.getPlayer2().hand);
+                w.println(result.getPlayer2().getHand());
                 w.println( "</td><td>" );
                 w.println(winner);
                 w.println( "</td></tr>" );
