@@ -1,7 +1,5 @@
 package com.bertvanbrakel.ccgs;
 
-import static org.hamcrest.Matchers.*;
-
 import org.apache.commons.lang.StringUtils;
 
 public class GameRockPaperScissors implements Game<HAND> {
@@ -31,5 +29,13 @@ public class GameRockPaperScissors implements Game<HAND> {
 	@Override
 	public String getMatcheParams() {
 		return null;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		startAndBlock(); 
+	}
+	
+	public static void startAndBlock() throws Exception {
+		GameServer.startAndBlock(new GameRockPaperScissors());
 	}
 }

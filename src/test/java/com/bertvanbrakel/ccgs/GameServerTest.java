@@ -17,11 +17,17 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +53,7 @@ public class GameServerTest {
     }
 
 	public static void main(String[] args) throws Exception {
+	
 		final GameServerTest test = new GameServerTest();
 		test.setup();
 
@@ -66,6 +73,7 @@ public class GameServerTest {
 			}
 		}));
 		while (true) {
+			Thread.yield();
 			Thread.sleep(1000);
 		}
 	}
@@ -187,7 +195,8 @@ public class GameServerTest {
         try {
             players.start();
             
-            String gameParams = null;
+            final String gameParams = null;
+            final String[] ignoreFields = {"invokedAt","respondedAt" };
 
             final Player alwaysRockPlayer = new Player(players.getBaseHttpUrl() + "/alwaysRock");
             final Player alwaysScissorsPlayer = new Player(players.getBaseHttpUrl() + "/alwaysScissors");
@@ -197,30 +206,49 @@ public class GameServerTest {
             {
                 final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
-                assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE))));
+                assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
-                assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO))));
+                assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
-                assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW))));
+                assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
-                assertThat(result,is(equalTo(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW))));
+                assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW),ignoreFields));
             }
         } finally {
             players.stop();
         }
     }
+    
+	private static <T> Matcher<RoundResult<T>> isEqualToIgnoringFields(
+			final RoundResult<T> expect, final String[] excludingFields) {
+		return new TypeSafeMatcher<RoundResult<T>>() {
+
+			@Override
+			public void describeTo(Description desc) {
+				desc.appendText(ToStringBuilder.reflectionToString(expect,ToStringStyle.MULTI_LINE_STYLE));
+			}
+
+			@Override
+			public boolean matchesSafely(RoundResult<T> actual) {
+				boolean player1Equals = EqualsBuilder.reflectionEquals(expect.getPlayer1(), actual.getPlayer1(), excludingFields);
+				boolean player2Equals = EqualsBuilder.reflectionEquals(expect.getPlayer2(), actual.getPlayer2(), excludingFields);
+				boolean otherEquals = EqualsBuilder.reflectionEquals(expect, actual, new String[]{"player1","player2"});
+				return player1Equals && player2Equals && otherEquals;
+			}
+		};
+	}
 
 
     @Test

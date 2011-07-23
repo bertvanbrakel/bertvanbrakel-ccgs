@@ -9,10 +9,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-public class ViewRenderer {
+public class ViewRenderer<T> {
 
-	@SuppressWarnings("rawtypes")
-	public void renderMatches(PrintWriter w, Collection<Match> matches, int numToShow){
+	public void renderMatches(PrintWriter w, Collection<MatchResults<T>> matches, int numToShow){
 		final DateFormat format = new SimpleDateFormat( "HH:m:s" );
         w.println("<html><head><title>Matches</title>");
         if( numToShow > 0 ){
@@ -26,9 +25,9 @@ public class ViewRenderer {
         w.print("<tr><th>Round#</th><th>Start</th><th>End</th></tr>");
         int roundNum  = matches.size();
         int count = 0;
-        List<Match> matchesReverse = new ArrayList<Match>(matches);
+        List<MatchResults<T>> matchesReverse = new ArrayList<MatchResults<T>>(matches);
         Collections.reverse(matchesReverse);
-        for (final Match<?> match : matchesReverse) {
+        for (final MatchResults<?> match : matchesReverse) {
         	count++;
 			if (numToShow > 0 && count > numToShow) {
 				break;

@@ -8,14 +8,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.plaf.ListUI;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -40,25 +39,27 @@ public class GameServer<T> {
     private final Logger LOG = Logger.getLogger(GameServer.class);
 
     private final TestServer server = new TestServer();
-    private final CopyOnWriteArrayList<Player> registeredPlayers = new CopyOnWriteArrayList<Player>();
+    private final Collection<Player> registeredPlayers = new CopyOnWriteArraySet<Player>();
 
     //the game being played
     private final Game<T> game;
     //the history of matches and results
-    private final List<Match> matches = new ArrayList<Match>();
+    private final List<MatchResults<T>> matches = new ArrayList<MatchResults<T>>();
 
-    private Collection<Round> currentRound = new ArrayList<Round>();
-
-    private ViewRenderer renderer = new ViewRenderer();
+    private final ViewRenderer<T> renderer = new ViewRenderer<T>();
     
     private final long roundEverySec = 2;
-    private final int numMatchesInLatest = 10;
-    ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10);
+    
+    private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10);
+    
+    private final GameListener<T> listener = new GameListenerHelper<T>();
 
 	public static void main(String[] args) throws Exception {
-		Game game = new GameRockPaperScissors();
+		startAndBlock(new GameRockPaperScissors());
+	}
+	
+	public static void startAndBlock(Game game) throws Exception {
 		final GameServer server = new GameServer(game);
-
 		try {
 			server.start();
 
@@ -69,6 +70,7 @@ public class GameServer<T> {
 				}
 			}));
 			while (true) {
+				Thread.yield();
 				Thread.sleep(1000);
 			}
 		} finally {
@@ -201,6 +203,7 @@ public class GameServer<T> {
 
         server.start();
 
+        listener.onGameBegin(game);
         executor.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -219,13 +222,15 @@ public class GameServer<T> {
             LOG.error("Error stopping game server", e);
         }
 
+        listener.onGameEnd(game);
+        
         if (httpClient != null) {
             httpClient.getConnectionManager().shutdown();
         }
     }
 
     protected void registerPlayer(final String url){
-        registeredPlayers.addIfAbsent(new Player(url));
+        registeredPlayers.add(new Player(url));
     }
 
     public Collection<Player> getPlayers() {
@@ -237,18 +242,27 @@ public class GameServer<T> {
     }
 
     public void runRound() {
-		final long startedAt = System.currentTimeMillis();
+		
 		final List<Round> rounds = generateRounds();
 		Collections.shuffle(rounds);
-		this.currentRound = new ArrayList<Round>(rounds);
+		
+		final long startedAt = System.currentTimeMillis();
+		Match<T> match = new Match<T>(startedAt,rounds);
+		listener.onMatchBegin(match);
+		
 		final Collection<RoundResult<T>> results = new ArrayList<RoundResult<T>>();
 		String matchParams = game.getMatcheParams();
 		for (final Round round : rounds) {
-			results.add(playRound(round, matchParams));
+			listener.onRoundBegin(round);
+			RoundResult<T> result = playRound(round, matchParams);
+			results.add(result);
+			listener.onRoundEnd(result);
 		}
 		final long endedAt = System.currentTimeMillis();
 
-		matches.add(new Match<T>(startedAt, endedAt, results));
+		MatchResults<T> matchResult = new MatchResults<T>(startedAt, endedAt, results);
+		matches.add(matchResult);
+		listener.onMatchEnd(matchResult);
     }
 
     protected List<Round> generateRounds() {
