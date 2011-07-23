@@ -1,11 +1,11 @@
 package com.bertvanbrakel.ccgs;
 
+import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Player;
 
 
-public interface Game<T> {
+public interface Game<T> extends GameSummary {
 
-	public String getName();
 	/**
 	 * Calculate the winner of a round
 	 */

@@ -1,5 +1,6 @@
 package com.bertvanbrakel.ccgs;
 
+import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
@@ -10,7 +11,7 @@ import com.bertvanbrakel.ccgs.model.RoundResult;
 public class GameListenerAdapter<T> implements GameListener<T> {
 
 	@Override
-	public void onGameBegin(Game<T> game) {
+	public void onGameBegin(GameSummary game) {
 	}
 
 	@Override
@@ -34,7 +35,7 @@ public class GameListenerAdapter<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onGameEnd(Game<T> game) {
+	public void onGameEnd(GameSummary game) {
 	}
 
 

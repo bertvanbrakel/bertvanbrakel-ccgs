@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
@@ -38,7 +39,7 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 	}
 	
 	@Override
-	public void onGameBegin(final Game<T> game) {
+	public void onGameBegin(final GameSummary game) {
 		invokeAll(new ListenerCallback<T>() {
 			@Override
 			public void invoke(GameListener<T> listener) {
@@ -99,7 +100,7 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onGameEnd(final Game<T> game) {
+	public void onGameEnd(final GameSummary game) {
 		invokeAll(new ListenerCallback<T>() {
 			@Override
 			public void invoke(GameListener<T> listener) {

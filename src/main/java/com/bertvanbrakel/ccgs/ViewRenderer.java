@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
@@ -26,7 +27,7 @@ public class ViewRenderer<T> extends GameListenerAdapter<T> {
 	}
 
 	@Override
-	public void onGameBegin(Game<T> game) {
+	public void onGameBegin(GameSummary game) {
 		this.gameName = game.getName();
 	}
 

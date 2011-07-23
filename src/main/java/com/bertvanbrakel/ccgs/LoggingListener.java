@@ -2,6 +2,7 @@ package com.bertvanbrakel.ccgs;
 
 import org.apache.log4j.Logger;
 
+import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
@@ -24,7 +25,7 @@ public class LoggingListener<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onGameBegin(Game<T> game) {
+	public void onGameBegin(GameSummary game) {
 		print(GAME, "game begin:" + game.getName());
 	}
 
@@ -56,7 +57,7 @@ public class LoggingListener<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onGameEnd(Game<T> game) {
+	public void onGameEnd(GameSummary game) {
 		print(GAME, "game end");
 	}
 }
