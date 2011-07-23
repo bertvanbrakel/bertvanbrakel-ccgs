@@ -9,15 +9,40 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-public class ViewRenderer<T> {
+public class ViewRenderer<T> extends GameListenerAdapter<T> {
 
-	public void renderMatches(PrintWriter w, Collection<MatchResults<T>> matches, int numToShow){
+	private List<MatchResults<T>> matches = new ArrayList<MatchResults<T>>();
+	
+	private Collection<Player> players = new ArrayList<Player>();
+	
+	private volatile String gameName;
+
+	public ViewRenderer(){
+	}
+
+	@Override
+	public void onGameBegin(Game<T> game) {
+		this.gameName = game.getName();
+	}
+
+	@Override
+	public void onMatchEnd(MatchResults<T> matchResults) {
+		matches.add(matchResults);
+	}
+
+	@Override
+	public void onMatchBegin(Match<T> match) {
+		players = match.getPlayers();
+	}
+
+	public void renderMatches(PrintWriter w, int numToShow){
 		final DateFormat format = new SimpleDateFormat( "HH:m:s" );
         w.println("<html><head><title>Matches</title>");
         if( numToShow > 0 ){
         	w.println("<meta http-equiv='refresh' content='2'>");
         }
         w.println("</head><link rel='stylesheet' type='text/css'  href='/style.css' /><body>");
+		w.println("<h1> Game " + gameName + "</h1>");
         if( numToShow > 0){
         	w.println("Showing latest " + numToShow + " rounds of " + matches.size());
         }
@@ -93,10 +118,13 @@ public class ViewRenderer<T> {
         w.println("td.draw { color:yellow }");
     }
 
-	public void renderPlayers(PrintWriter w, Collection<Player> registeredPlayers) {
-		w.println("<html><head><title>Registrations</title><meta http-equiv='refresh' content='2'></head><link rel='stylesheet' type='text/css'  href='/style.css' /><body><table>");
+	public void renderPlayers(PrintWriter w) {
+		w.println("<html><head><title>Registrations</title><meta http-equiv='refresh' content='2'></head><link rel='stylesheet' type='text/css'  href='/style.css' />");
+		w.println("<body>");
+		w.println("<h1> Game " + gameName + "</h1>");
+		w.println("<table>");
         w.print("<tr><th>Players</th></tr>");
-        for (final Player player : registeredPlayers) {
+        for (final Player player : players) {
             w.print("<tr><td>");
             w.print(player);
             w.println("</td></tr>");
@@ -105,8 +133,9 @@ public class ViewRenderer<T> {
 	}
 
 	public void renderIndex(PrintWriter w) {
-        w.println("<html><head><title>Game Server</title></head>");
+        w.println("<html><head><title>Game Server - " + gameName + "</title></head>");
         w.println("<body>");
+		w.println("<h1> Game " + gameName + "</h1>");
         w.println("<p><a href='latestMatches?num=8'>latestMatches</a></p>");
         w.println("<p><a href='matches'>matches</a></p>");
         w.println("<p><a href='registrations'>registrations</a></p>");

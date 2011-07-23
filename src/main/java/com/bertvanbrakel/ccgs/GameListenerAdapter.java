@@ -1,11 +1,14 @@
 package com.bertvanbrakel.ccgs;
 
-import java.util.Collection;
 
 public class GameListenerAdapter<T> implements GameListener<T> {
 
 	@Override
 	public void onGameBegin(Game<T> game) {
+	}
+
+	@Override
+	public void onPlayerJoined(Player player) {
 	}
 
 	@Override
@@ -27,6 +30,7 @@ public class GameListenerAdapter<T> implements GameListener<T> {
 	@Override
 	public void onGameEnd(Game<T> game) {
 	}
+
 
 
 }

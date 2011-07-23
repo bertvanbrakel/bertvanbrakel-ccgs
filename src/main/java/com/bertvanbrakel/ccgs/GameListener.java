@@ -3,6 +3,8 @@ package com.bertvanbrakel.ccgs;
 
 public interface GameListener<T> {
 	public void onGameBegin(Game<T> game);
+	
+	public void onPlayerJoined(Player player);
 
 	public void onMatchBegin(Match<T> match);
 

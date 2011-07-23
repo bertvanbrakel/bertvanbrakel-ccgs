@@ -4,6 +4,11 @@ import org.apache.commons.lang.StringUtils;
 
 public class GameRockPaperScissors implements Game<HAND> {
 
+	@Override
+	public String getName() {
+		return "Rock Paper Scissors";
+	}
+	
     @Override
     public WINNER calculateWinner(final HAND player1Hand, final HAND player2Hand) {
         return player1Hand.calculateWinner(player2Hand);
@@ -38,4 +43,5 @@ public class GameRockPaperScissors implements Game<HAND> {
 	public static void startAndBlock() throws Exception {
 		GameServer.startAndBlock(new GameRockPaperScissors());
 	}
+
 }

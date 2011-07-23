@@ -32,6 +32,17 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 		});
 	}
 
+
+	@Override
+	public void onPlayerJoined(final Player player) {
+		invokeAll(new ListenerCallback<T>() {
+			@Override
+			public void invoke(GameListener<T> listener) {
+				listener.onPlayerJoined(player);
+			}
+		});
+	}
+
 	@Override
 	public void onMatchBegin(final Match<T> match) {
 		invokeAll(new ListenerCallback<T>() {

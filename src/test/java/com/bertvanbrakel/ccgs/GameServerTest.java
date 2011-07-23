@@ -79,11 +79,12 @@ public class GameServerTest {
 	}
     @Test
     public void test_register_callback_url() throws Exception {
-        final String callbackURL = generateRandomCallbackUrl();
+        final String callbackURL = generateUniqueCallbackUrl();
         final HttpResponse response = registerCallback(callbackURL);
+        GameRunner<HAND> runner = server.getGameRunner();
         
         assertThat(the(response.getStatusLine().getStatusCode()), is(equalTo(HTTP_OK)));
-        assertThat(server.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
+        assertThat(runner.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
     }
 
     private HttpResponse makeRequest(final String url)
@@ -106,37 +107,41 @@ public class GameServerTest {
 
     @Test
     public void test_register_the_same_call_back_multiple_times_results_in_a_single_registration() throws Exception {
-        final String callbackURL = generateRandomCallbackUrl();
+    	 GameRunner<HAND> runner = server.getGameRunner();
+    	 
+        final String callbackURL = generateUniqueCallbackUrl();
         for (int i = 0; i < 5; i++) {
             final HttpResponse response = registerCallback(callbackURL);
             
             assertThat(the(response.getStatusLine().getStatusCode()), is(equalTo(HTTP_OK)));
         }
-        assertThat(server.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
+        assertThat(runner.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
     }
 
     @Test
     public void test_register_multiple_callback_urls() throws Exception {
-        final String url1 = generateRandomCallbackUrl();
-        final String url2 = generateRandomCallbackUrl();
-        final String url3 = generateRandomCallbackUrl();
+        final String url1 = generateUniqueCallbackUrl();
+        final String url2 = generateUniqueCallbackUrl();
+        final String url3 = generateUniqueCallbackUrl();
 
         registerCallback(url1);
         registerCallback(url2);
         registerCallback(url3);
 
-        assertThat(server.getPlayers().size(),is(equalTo(3)));
-        assertThat(server.getPlayers(),containsItem(equalTo(new Player(url1))));
-        assertThat(server.getPlayers(),containsItem(equalTo(new Player(url2))));
-        assertThat(server.getPlayers(),containsItem(equalTo(new Player(url3))));
+        GameRunner<HAND> runner = server.getGameRunner();
+        assertThat(runner.getPlayers().size(),is(equalTo(3)));
+        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url1))));
+        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url2))));
+        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url3))));
     }
 
     @Test
     public void test_generate_round_with_single_player() throws Exception {
-        final String url = generateRandomCallbackUrl();
+        final String url = generateUniqueCallbackUrl();
         registerCallback(url);
         
-        final List<Round> rounds = server.generateRounds();
+        GameRunner<HAND> runner = server.getGameRunner();
+        final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
         assertThat(rounds.size(),is(equalTo(1)));
         assertThat(rounds.get(0),is(equalTo(new Round(new Player(url)))));
     }
@@ -150,15 +155,17 @@ public class GameServerTest {
      */
     @Test
     public void test_generate_round_with_multiple_players() throws Exception {
-        final String url1 = generateRandomCallbackUrl();
-        final String url2 = generateRandomCallbackUrl();
-        final String url3 = generateRandomCallbackUrl();
+        final String url1 = generateUniqueCallbackUrl();
+        final String url2 = generateUniqueCallbackUrl();
+        final String url3 = generateUniqueCallbackUrl();
 
         registerCallback(url1);
         registerCallback(url2);
         registerCallback(url3);
 
-        final List<Round> rounds = server.generateRounds();
+        GameRunner<HAND> runner = server.getGameRunner();
+        
+        final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
         assertThat(rounds.size(),is(equalTo(3)));
         assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url2)))));
         assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url3)))));
@@ -202,27 +209,28 @@ public class GameServerTest {
             final Player alwaysScissorsPlayer = new Player(players.getBaseHttpUrl() + "/alwaysScissors");
             final PlayerResult<HAND> alwaysRockResult = new PlayerResult<HAND>(alwaysRockPlayer, HAND.ROCK);
             final PlayerResult<HAND> alwaysScissorsResult = new PlayerResult<HAND>(alwaysScissorsPlayer, HAND.SCISSORS);
+            GameRunner<HAND> runner = server.getGameRunner();
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = server.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW),ignoreFields));
             }
@@ -250,7 +258,6 @@ public class GameServerTest {
 		};
 	}
 
-
     @Test
     public void test_register_players() throws Exception {
 
@@ -265,10 +272,12 @@ public class GameServerTest {
     
     
     private void registerPlayers(CapturingTestServer players){
-    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysRock");
-    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysScissors");
-    	server.registerPlayer(players.getBaseHttpUrl() + "/alwaysPaper");
-    	server.registerPlayer(players.getBaseHttpUrl() + "/loopRockPaperScissors");
+    	GameRunner<HAND> runner = server.getGameRunner();
+    	
+    	runner.registerPlayer(players.getBaseHttpUrl() + "/alwaysRock");
+    	runner.registerPlayer(players.getBaseHttpUrl() + "/alwaysScissors");
+    	runner.registerPlayer(players.getBaseHttpUrl() + "/alwaysPaper");
+    	runner.registerPlayer(players.getBaseHttpUrl() + "/loopRockPaperScissors");
     }
 
     private CapturingTestServer newPlayers(){
@@ -326,7 +335,7 @@ public class GameServerTest {
         });
         return players;
     }
-    private String generateRandomCallbackUrl(){
+    private String generateUniqueCallbackUrl(){
     	return "http://my/callback/url1" + counter.getAndIncrement() + UUID.randomUUID().toString();
     }
     

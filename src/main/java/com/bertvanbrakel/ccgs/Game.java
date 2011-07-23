@@ -3,6 +3,7 @@ package com.bertvanbrakel.ccgs;
 
 public interface Game<T> {
 
+	public String getName();
 	/**
 	 * Calculate the winner of a round
 	 */
