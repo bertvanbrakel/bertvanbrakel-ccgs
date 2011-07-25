@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.bertvanbrakel.ccgs.WINNER;
 import com.bertvanbrakel.ccgs.game.rockpaperscissors.GameRockPaperScissors;
 import com.bertvanbrakel.ccgs.game.rockpaperscissors.HAND;
+import com.bertvanbrakel.ccgs.model.WINNER;
 
 public class RockPaperScissorsTest {
     @Test

@@ -1,15 +1,19 @@
 package com.bertvanbrakel.ccgs.model;
 
+import java.util.Collection;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-import com.bertvanbrakel.ccgs.WINNER;
 
 
 public class RoundResult<T> {
 
+	//TODO:make this any number of players to allow multi player rounds
+//	private Collection<PlayerResult<T>> results;
+	
     private final PlayerResult<T> player1;
     private final PlayerResult<T> player2;
     private final WINNER winner;

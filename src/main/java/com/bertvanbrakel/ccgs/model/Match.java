@@ -1,18 +1,19 @@
 package com.bertvanbrakel.ccgs.model;
 
+import static org.apache.commons.lang.Validate.notNull;
+
 import java.util.Collection;
 import java.util.Collections;
 
 public class Match<T> {
-	public final long startedAt;
-	public final Collection<Player> players;
-	public final Collection<Round> rounds;
 
-	public Match(long startedAt, Collection<Player> players, Collection<Round> rounds) {
-		super();
+	private final long startedAt;
+	private final Collection<Player> players;
+
+	public Match(long startedAt, Collection<Player> players) {
+		notNull(players, "null players");
 		this.startedAt = startedAt;
-		this.players =  Collections.unmodifiableCollection(players);
-		this.rounds = Collections.unmodifiableCollection(rounds);
+		this.players = Collections.unmodifiableCollection(players);
 	}
 
 	public long getStartedAt() {
@@ -21,10 +22,6 @@ public class Match<T> {
 
 	public Collection<Player> getPlayers() {
 		return players;
-	}
-
-	public Collection<Round> getRounds() {
-		return rounds;
 	}
 
 }

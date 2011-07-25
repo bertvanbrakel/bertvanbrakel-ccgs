@@ -5,16 +5,16 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-public class Round {
+public class FaceOffRound {
     private final Player player2;
     private final Player player1;
 
-    public Round(final Player player1) {
+    public FaceOffRound(final Player player1) {
         this.player1 = player1;
         this.player2 = null;
     }
 
-    public Round(final Player player1, final Player player2) {
+    public FaceOffRound(final Player player1, final Player player2) {
         this.player1 = player1;
         this.player2 = player2;
     }

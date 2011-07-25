@@ -26,17 +26,19 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.HttpParams;
 import org.apache.log4j.Logger;
 
-import com.bertvanbrakel.ccgs.model.Match;
+import com.bertvanbrakel.ccgs.model.FaceOffMatch;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.PlayerResult;
-import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.FaceOffRound;
 import com.bertvanbrakel.ccgs.model.RoundResult;
+import com.bertvanbrakel.ccgs.model.WINNER;
 
 //TODO:run rounds in parallel
 public class GameRunner<T> {
 
 	private static final Logger LOG = Logger.getLogger(GameRunner.class);
+	private static final int NUM_THREADS_To_RUN_MATCHES = 10;
 	
 	//user supplied
 	private final Game<T> game;
@@ -44,7 +46,7 @@ public class GameRunner<T> {
 	private final GameListener<T> listener; 
 	 
 	private final Collection<Player> registeredPlayers = new CopyOnWriteArraySet<Player>();
-	private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10);
+	private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(NUM_THREADS_To_RUN_MATCHES);
 	
 	private HttpClient httpClient;
     private volatile boolean running = false;
@@ -96,13 +98,12 @@ public class GameRunner<T> {
 			throw new IllegalStateException("GameRunner already started");
 		}
 		try {
-	        final DefaultHttpClient client = new DefaultHttpClient();
-	
-	        final ClientConnectionManager conMgr = client.getConnectionManager();
-	        final HttpParams params = client.getParams();
+	        final DefaultHttpClient defaultClient = new DefaultHttpClient();
+	        final ClientConnectionManager defaultConMgr = defaultClient.getConnectionManager();
+	        final HttpParams defaultHttpParams = defaultClient.getParams();
 	
 	        httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager(
-	                params, conMgr.getSchemeRegistry()), params);
+	                defaultHttpParams, defaultConMgr.getSchemeRegistry()), defaultHttpParams);
 	
 	        listener.onGameBegin(game);
 	        executor.scheduleWithFixedDelay(new Runnable() {
@@ -138,17 +139,17 @@ public class GameRunner<T> {
 	
 	private void runNextMatch() {
 		final List<Player> players = getPlayerSnapshot();
-		final List<Round> rounds = generateShuffledRounds(players);
+		final List<FaceOffRound> rounds = generateShuffledRounds(players);
 		final long startedAt = System.currentTimeMillis();
-		runMatch(new Match<T>(startedAt, players, rounds));
+		runMatch(new FaceOffMatch<T>(startedAt, players, rounds));
 	}
 	
-	private void runMatch(Match<T> match) {
+	private void runMatch(FaceOffMatch<T> match) {
 		listener.onMatchBegin(match);
 		
 		final Collection<RoundResult<T>> results = new ArrayList<RoundResult<T>>();
-		String matchParams = game.getMatcheParams();
-		for (final Round round : match.getRounds()) {
+		String matchParams = game.getMatchParams();
+		for (final FaceOffRound round : match.getRounds()) {
 			results.add(playRound(round, matchParams));
 		}
 		final long endedAt = System.currentTimeMillis();
@@ -156,50 +157,55 @@ public class GameRunner<T> {
 		listener.onMatchEnd(new MatchResults<T>(match.getStartedAt(), endedAt, results));
 	}
 	
-	private List<Round> generateShuffledRounds(List<Player> players){
-		final List<Round> rounds = generateRounds(players);
+	private List<FaceOffRound> generateShuffledRounds(List<Player> players){
+		final List<FaceOffRound> rounds = generateRounds(players);
 		Collections.shuffle(rounds);
 		return rounds;
 	}
 
-	protected List<Round> generateRounds(List<Player> players) {
+	protected List<FaceOffRound> generateRounds(List<Player> players) {
 	    // generate list of opponents
-	    final List<Round> rounds = new ArrayList<Round>();
+	    final List<FaceOffRound> rounds = new ArrayList<FaceOffRound>();
 	    if (players.size() == 1) {
-	        rounds.add(new Round(players.get(0)));
+	        rounds.add(new FaceOffRound(players.get(0)));
 	    } else {
 	        for (final Iterator<Player> iter = players.iterator(); iter.hasNext();) {
 	            final Player player1 = iter.next();
 	            // don't use this player again for subsequent rounds in this match
 	            iter.remove();
 	            for (final Player player2 : players) {
-	                rounds.add(new Round(player1, player2));
+	                rounds.add(new FaceOffRound(player1, player2));
 	            }
 	        }
 	    }
 	    return rounds;
 	}
 
-	protected RoundResult<T> playRound(final Round round, String gameParams) {
+	protected RoundResult<T> playRound(final FaceOffRound round, String gameParams) {
 		listener.onRoundBegin(round);
 		
 	    final PlayerResult<T> result1 = invokePlayer(round.getPlayer1(), gameParams);
 	    final PlayerResult<T> result2 = invokePlayer(round.getPlayer2(), gameParams);
-	    final WINNER winner;
-	    if (result1.getHand() != null && result2.getHand() != null) {
-	        winner = game.calculateWinner(result1.getHand(), result2.getHand());
-	    } else if (result1.getHand() == null && result2.getHand() == null) {
-	        winner = WINNER.DRAW;
-	    } else if (result1.getHand() != null) {
-	        winner = WINNER.ONE;
-	    } else {
-	        winner = WINNER.TWO;
-	    }
+	    final WINNER winner = calculateWinner(result1, result2);
 	    
 	    RoundResult<T> result = new RoundResult<T>(result1, result2, winner);
 	    
 	    listener.onRoundEnd(result);
 	    return result;
+	}
+	
+	private WINNER calculateWinner(PlayerResult<T> result1,PlayerResult<T> result2){
+	    final WINNER winner;
+	    if (result1.getHand() != null && result2.getHand() != null) {
+	        winner = game.calculateWinner(result1.getHand(), result2.getHand());
+	    } else if (result1.getHand() == null && result2.getHand() == null) {
+	        winner = WINNER.FORFIET;
+	    } else if (result1.getHand() != null) {
+	        winner = WINNER.ONE;
+	    } else {
+	        winner = WINNER.TWO;
+	    }
+	    return winner;
 	}
 
 	private PlayerResult<T> invokePlayer(final Player player, String gameParams) {

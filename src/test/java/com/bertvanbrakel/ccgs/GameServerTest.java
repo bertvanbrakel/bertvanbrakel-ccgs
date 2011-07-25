@@ -36,8 +36,9 @@ import com.bertvanbrakel.ccgs.game.rockpaperscissors.GameRockPaperScissors;
 import com.bertvanbrakel.ccgs.game.rockpaperscissors.HAND;
 import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.PlayerResult;
-import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.FaceOffRound;
 import com.bertvanbrakel.ccgs.model.RoundResult;
+import com.bertvanbrakel.ccgs.model.WINNER;
 import com.bertvanbrakel.testserver.TestServlet;
 import com.bertvanbrakel.testserver.capturing.CapturingTestServer;
 public class GameServerTest {
@@ -147,9 +148,9 @@ public class GameServerTest {
         registerCallback(url);
         
         GameRunner<HAND> runner = server.getGameRunner();
-        final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
+        final List<FaceOffRound> rounds = runner.generateRounds(runner.getPlayerSnapshot());
         assertThat(rounds.size(),is(equalTo(1)));
-        assertThat(rounds.get(0),is(equalTo(new Round(new Player(url)))));
+        assertThat(rounds.get(0),is(equalTo(new FaceOffRound(new Player(url)))));
     }
 
     /**
@@ -171,11 +172,11 @@ public class GameServerTest {
 
         GameRunner<HAND> runner = server.getGameRunner();
         
-        final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
+        final List<FaceOffRound> rounds = runner.generateRounds(runner.getPlayerSnapshot());
         assertThat(rounds.size(),is(equalTo(3)));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url2)))));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url3)))));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url2),new Player(url3)))));
+        assertThat(rounds,containsItem(equalTo(new FaceOffRound(new Player(url1),new Player(url2)))));
+        assertThat(rounds,containsItem(equalTo(new FaceOffRound(new Player(url1),new Player(url3)))));
+        assertThat(rounds,containsItem(equalTo(new FaceOffRound(new Player(url2),new Player(url3)))));
     }
 
 
@@ -218,25 +219,25 @@ public class GameServerTest {
             GameRunner<HAND> runner = server.getGameRunner();
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new FaceOffRound(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new FaceOffRound(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new FaceOffRound(alwaysRockPlayer,alwaysRockPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW),ignoreFields));
             }
             players.resetCaptures();
             {
-                final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
+                final RoundResult<HAND> result = runner.playRound(new FaceOffRound(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
                 assertThat(players.getTotalNumRequests(),is(equalTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW),ignoreFields));
             }

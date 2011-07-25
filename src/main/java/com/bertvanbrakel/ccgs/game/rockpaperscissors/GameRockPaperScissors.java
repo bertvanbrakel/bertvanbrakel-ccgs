@@ -1,18 +1,35 @@
 package com.bertvanbrakel.ccgs.game.rockpaperscissors;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+
 import org.apache.commons.lang.StringUtils;
 
-import com.bertvanbrakel.ccgs.Game;
+import com.bertvanbrakel.ccgs.FaceOffGame;
 import com.bertvanbrakel.ccgs.GameServer;
 import com.bertvanbrakel.ccgs.InvalidResponseException;
-import com.bertvanbrakel.ccgs.WINNER;
 import com.bertvanbrakel.ccgs.model.Player;
+import com.bertvanbrakel.ccgs.model.WINNER;
 
-public class GameRockPaperScissors implements Game<HAND> {
+public class GameRockPaperScissors implements FaceOffGame<HAND> {
 
 	@Override
 	public String getName() {
 		return "Rock Paper Scissors";
+	}
+
+
+	@Override
+	public int getNumPlayersPerFaceOff() {
+		return 2;
+	}
+
+	@Override
+	public Collection<WINNER> calculateRankings(Collection<HAND> playerHands) {
+		Iterator<HAND> iter = playerHands.iterator();
+		WINNER winner = calculateWinner(iter.next(),iter.next());
+		return Arrays.asList(winner);
 	}
 	
     @Override
@@ -38,7 +55,7 @@ public class GameRockPaperScissors implements Game<HAND> {
     }
 
 	@Override
-	public String getMatcheParams() {
+	public String getMatchParams() {
 		return null;
 	}
 	
@@ -49,5 +66,6 @@ public class GameRockPaperScissors implements Game<HAND> {
 	public static void startAndBlock() throws Exception {
 		GameServer.startAndBlock(new GameRockPaperScissors());
 	}
+
 
 }

@@ -6,7 +6,7 @@ import com.bertvanbrakel.ccgs.model.GameSummary;
 import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
-import com.bertvanbrakel.ccgs.model.Round;
+import com.bertvanbrakel.ccgs.model.FaceOffRound;
 import com.bertvanbrakel.ccgs.model.RoundResult;
 
 public class LoggingListener<T> implements GameListener<T> {
@@ -40,7 +40,7 @@ public class LoggingListener<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onRoundBegin(Round round) {
+	public void onRoundBegin(FaceOffRound round) {
 		print(ROUND,
 				"begin round:1=" + round.getPlayer1() + ",2="
 						+ round.getPlayer2());
