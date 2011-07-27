@@ -246,8 +246,7 @@ public class GameServerTest {
         }
     }
     
-	private static <T> Matcher<FaceOffRoundResult<T>> isEqualToIgnoringFields(
-			final FaceOffRoundResult<T> expect, final String[] excludingFields) {
+	private static <T> Matcher<FaceOffRoundResult<T>> isEqualToIgnoringFields(final FaceOffRoundResult<T> expect, final String[] excludingFields) {
 		return new TypeSafeMatcher<FaceOffRoundResult<T>>() {
 
 			@Override
@@ -257,12 +256,17 @@ public class GameServerTest {
 
 			@Override
 			public boolean matchesSafely(FaceOffRoundResult<T> actual) {
-				boolean player1Equals = EqualsBuilder.reflectionEquals(expect.getPlayer1Result(), actual.getPlayer1Result(), excludingFields);
-				boolean player2Equals = EqualsBuilder.reflectionEquals(expect.getPlayer2Result(), actual.getPlayer2Result(), excludingFields);
-				boolean otherEquals = EqualsBuilder.reflectionEquals(expect, actual, new String[]{"player1","player2"});
-				return player1Equals && player2Equals && otherEquals;
+				boolean player1Equals = isEqualIgnoringFields(expect.getPlayer1Result(), actual.getPlayer1Result(), excludingFields);
+				boolean player2Equals = isEqualIgnoringFields(expect.getPlayer2Result(), actual.getPlayer2Result(), excludingFields);
+				final String[] IGNORE = new String[]{"results"};
+				boolean otherFieldsEqual = EqualsBuilder.reflectionEquals(expect, actual, IGNORE);
+				return player1Equals && player2Equals && otherFieldsEqual;
 			}
 		};
+	}
+	
+	private static <T> boolean isEqualIgnoringFields(PlayerInvocationResult<T> expect,PlayerInvocationResult<T> actual, String[] excludingFields){
+		return EqualsBuilder.reflectionEquals(expect, actual, excludingFields);
 	}
 
     @Test

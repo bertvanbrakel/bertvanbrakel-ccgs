@@ -1,5 +1,7 @@
 package com.bertvanbrakel.ccgs.game.speed;
 
+import java.util.Map;
+
 import com.bertvanbrakel.ccgs.Game;
 import com.bertvanbrakel.ccgs.InvalidResponseException;
 import com.bertvanbrakel.ccgs.model.Player;
@@ -8,6 +10,8 @@ import com.bertvanbrakel.ccgs.model.WINNER;
 public class GameSpeedCalculation implements Game<CalculationResult>{
 
 	private CalculationTest playerTest;
+	
+	
 	
 	@Override
 	public String getName() {
@@ -28,7 +32,7 @@ public class GameSpeedCalculation implements Game<CalculationResult>{
 	}
 
 	@Override
-	public String nextMatchParams() {
+	public Map<String, String[]> nextMatchParams() {
 		return null;
 	}
 

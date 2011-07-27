@@ -3,6 +3,7 @@ package com.bertvanbrakel.ccgs.game.rockpaperscissors;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -55,7 +56,7 @@ public class GameRockPaperScissors implements FaceOffGame<HAND> {
     }
 
 	@Override
-	public String nextMatchParams() {
+	public Map<String, String[]> nextMatchParams() {
 		return null;
 	}
 	
