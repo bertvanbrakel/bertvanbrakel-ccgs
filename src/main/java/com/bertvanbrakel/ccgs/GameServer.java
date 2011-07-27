@@ -2,6 +2,7 @@ package com.bertvanbrakel.ccgs;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -21,16 +22,23 @@ public class GameServer<T> {
     private final TestServer server = new TestServer();
    
     private final GameRunner<T> gameRunner;
-    private final ViewRenderer<T> renderer;
     
     private volatile boolean running = false;
+    
+    /**
+     * What clients need to provide to access the server. Prevents external parties from unauthorised access
+     */
+    private String gameAccessKey = null;
+    
+    private static final String PARAM_GAME_KEY = "accessKey";
+    private static final String PARAM_CALLBACK = "callbackurl";
     
 	public static void main(String[] args) throws Exception {
 		startAndBlock(new GameRockPaperScissors());
 	}
 	
 	public static <T> void startAndBlock(Game<T> game) throws Exception {
-		new GameServer<T>(game).startAndBlock();
+		GameServer.newGameServer(game).startAndBlock();
 	}
 	
 	public void startAndBlock()  throws Exception {
@@ -51,120 +59,20 @@ public class GameServer<T> {
 		}	
 	}
     
-    public GameServer(final Game<T> game) {
-    	this.renderer = new ViewRenderer<T>();
-    	this.gameRunner = new GameRunner<T>(game, new GameOptions(), new GameListenerHelper<T>(this.renderer));
-        registerServlets();
-    }
-    
-    private final void registerServlets(){
-        server.addServlet("/register", new TestServlet() {
-            private static final long serialVersionUID = -4085062849275099022L;
+	public static <T> GameServer<T> newGameServer(final Game<T> game) {
+		SimpleGameView<T> renderer = new SimpleGameView<T>();
+		GameRunner<T> runner = new GameRunner<T>(game, new GameOptions(),new GameListenerHelper<T>(renderer));
+		return new GameServer<T>(runner, renderer);
+	}
 
-            @Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-                String callback = req.getParameter("callbackurl");
-                callback = StringUtils.trimToNull(callback);
-                if (callback != null) {
-                	if( callback.startsWith(getBaseHttpUrl())){
-                        final PrintWriter w = resp.getWriter();
-                        w.println("Invalid param 'callbackurl', can't point back to the game server!");
-                        w.flush();
-                        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);                		
-                	} else {
-                		// only allow single registration
-                		gameRunner.registerPlayer(callback);
-                    	resp.setStatus(HttpServletResponse.SC_OK);
-                	}
-                } else {
-                    final PrintWriter w = resp.getWriter();
-                    w.println("Need to supply a 'callbackurl' param");
-                    w.flush();
-                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                }
-            }
-        });
-        server.addServlet("/style.css", new TestServlet() {
-            private static final long serialVersionUID = 8047753644806673173L;
+	public static <T> GameServer<T> newGameServer(final GameRunner<T> runner,
+			final GameView gameView) {
+		return new GameServer<T>(runner, gameView);
+	}
 
-            @Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-            	resp.setStatus(HttpServletResponse.SC_OK);
-            	final PrintWriter w = resp.getWriter();
-                renderer.renderStyle(w);
-                w.flush();
-            }
-        });
-        server.addServlet("/registrations", new TestServlet() {
-            private static final long serialVersionUID = -7210997041334032523L;
-
-            @Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-            	resp.setStatus(HttpServletResponse.SC_OK);            	
-            	final PrintWriter w = resp.getWriter();
-                renderer.renderPlayers(w);
-                w.flush();
-            }
-
-        });
-        server.addServlet("/matches", new TestServlet() {
-            private static final long serialVersionUID = -7210997041334032523L;
-
-            @Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-            	resp.setStatus(HttpServletResponse.SC_OK);
-            	final PrintWriter w = resp.getWriter();
-            	renderer.renderMatches(w, -1);
-                w.flush();
-            }
-        });
-        server.addServlet("/latestMatches", new TestServlet() {
-            private static final long serialVersionUID = -7210997041334032523L;
-
-            @Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-            	resp.setStatus(HttpServletResponse.SC_OK);
-            	final PrintWriter w = resp.getWriter();
-            	renderer.renderMatches(w, paramAsInt(req,"num", -1));
-                w.flush();
-            }
-        });
-        server.addServlet("/", new TestServlet() {
-			private static final long serialVersionUID = -5685800051328504498L;
-
-			@Override
-            protected void service(final HttpServletRequest req,
-                    final HttpServletResponse resp) throws ServletException,
-                    IOException {
-                resp.setStatus(HttpServletResponse.SC_OK);
-                final PrintWriter w = resp.getWriter();
-                renderer.renderIndex(w);
-                w.flush();
-            }
-        });
-    }
-
-	private int paramAsInt(HttpServletRequest req, String paramName,
-			int defaultVal) {
-		String val = req.getParameter(paramName);
-		if (val != null) {
-			try {
-				return Integer.parseInt(val);
-			} catch (Exception e) {
-				// do nothing
-			}
-		}
-		return defaultVal;
+	private GameServer(final GameRunner<T> runner, final GameView gameView) {
+		this.gameRunner = runner;
+		registerViews(gameView);
 	}
 
     /**
@@ -199,9 +107,69 @@ public class GameServer<T> {
         return server.getBaseHttpUrl();
     }
     
-    
     public GameRunner<T> getGameRunner() {
 		return gameRunner;
 	}
 
+    private final void registerViews(GameView gameView){
+		for (final View view : gameView.getViews()) {
+			registerView(view);
+		}
+		registerView(newRegistrationView());
+    }
+        
+	private void registerView(final View view) {
+		String path = view.getPath();
+		if (!path.startsWith("/")) {
+			path = "/" + path;
+		}
+		server.addServlet(path, new TestServlet() {
+			private static final long serialVersionUID = -7210997041334032523L;
+
+			@Override
+			protected void service(final HttpServletRequest req,
+					final HttpServletResponse res) throws ServletException,
+					IOException {
+				view.render(req,res);
+			}
+		});
+		
+		LOG.debug("registered view at '" + path +"'" );
+	}
+    
+    private View newRegistrationView(){
+    	return new SimpleView("register") {
+			
+			@Override
+			public int render(PrintWriter w, Map<String, String[]> params) {
+                String callback = removeUnsafeXssChars( getParam(params, PARAM_CALLBACK));
+                String accessKey = removeUnsafeXssChars(getParam( params, PARAM_GAME_KEY));
+                
+                accessKey = StringUtils.trimToNull(accessKey);
+                callback = StringUtils.trimToNull(callback);
+                if( gameAccessKey != null ){
+	                if( accessKey == null ){
+	                    w.println("Need to supply a '" + PARAM_GAME_KEY  + "' param");
+	                    return HttpServletResponse.SC_BAD_REQUEST;
+	                } else if ( !gameAccessKey.equals(accessKey)){
+	                    w.println("Need to supply a valid '" + PARAM_GAME_KEY  + "' param");                     
+	                }
+                }
+                if (callback != null) {
+                	if( callback.startsWith(getBaseHttpUrl())){
+                        w.println("Invalid param '" + PARAM_CALLBACK + "', can't point back to the game server!");
+                        return HttpServletResponse.SC_BAD_REQUEST;                		
+                	} else {
+                		// only allow single registration
+                		gameRunner.registerPlayer(callback);
+                    	return HttpServletResponse.SC_OK;
+                	}
+                } else {
+                    w.println("Need to supply a '" + PARAM_CALLBACK  + "' param");
+                    return HttpServletResponse.SC_BAD_REQUEST;
+                }
+            }
+		};
+    }
+    
 }

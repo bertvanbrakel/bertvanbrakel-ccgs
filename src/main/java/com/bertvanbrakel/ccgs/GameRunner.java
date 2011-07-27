@@ -4,11 +4,15 @@ import static org.apache.commons.lang.Validate.notNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -29,9 +33,9 @@ import org.apache.log4j.Logger;
 import com.bertvanbrakel.ccgs.model.FaceOffMatch;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
-import com.bertvanbrakel.ccgs.model.PlayerResult;
+import com.bertvanbrakel.ccgs.model.PlayerInvocationResult;
 import com.bertvanbrakel.ccgs.model.FaceOffRound;
-import com.bertvanbrakel.ccgs.model.RoundResult;
+import com.bertvanbrakel.ccgs.model.FaceOffRoundResult;
 import com.bertvanbrakel.ccgs.model.WINNER;
 
 //TODO:run rounds in parallel
@@ -147,14 +151,38 @@ public class GameRunner<T> {
 	private void runMatch(FaceOffMatch<T> match) {
 		listener.onMatchBegin(match);
 		
-		final Collection<RoundResult<T>> results = new ArrayList<RoundResult<T>>();
-		String matchParams = game.getMatchParams();
+		final Collection<FaceOffRoundResult<T>> results = new ArrayList<FaceOffRoundResult<T>>();
+		String matchParams = paramsToQuery( game.nextMatchParams() );
 		for (final FaceOffRound round : match.getRounds()) {
-			results.add(playRound(round, matchParams));
+			results.add(playFaceoffRound(round, matchParams));
 		}
 		final long endedAt = System.currentTimeMillis();
 
 		listener.onMatchEnd(new MatchResults<T>(match.getStartedAt(), endedAt, results));
+	}
+	
+	private String paramsToQuery(Map<String, String[]> params) {
+		if (params == null || params.size() == 0) {
+			return null;
+		} else {
+			StringBuilder sb = new StringBuilder();
+			for (Entry<String, String[]> entry : params.entrySet()) {
+				for (String val : entry.getValue()) {
+					if (sb.length() > 0) {
+						sb.append("&");
+					}
+					sb.append(entry.getKey());
+					sb.append("=");
+					try {
+						sb.append(URLEncoder.encode(val, "UTF8"));
+					} catch (UnsupportedEncodingException e) {
+						throw new RuntimeException(
+								"Error encoding game params", e);
+					}
+				}
+			}
+			return sb.toString();
+		}
 	}
 	
 	private List<FaceOffRound> generateShuffledRounds(List<Player> players){
@@ -181,20 +209,20 @@ public class GameRunner<T> {
 	    return rounds;
 	}
 
-	protected RoundResult<T> playRound(final FaceOffRound round, String gameParams) {
+	protected FaceOffRoundResult<T> playFaceoffRound(final FaceOffRound round, String gameParams) {
 		listener.onRoundBegin(round);
 		
-	    final PlayerResult<T> result1 = invokePlayer(round.getPlayer1(), gameParams);
-	    final PlayerResult<T> result2 = invokePlayer(round.getPlayer2(), gameParams);
+	    final PlayerInvocationResult<T> result1 = invokePlayer(round.getPlayer1(), gameParams);
+	    final PlayerInvocationResult<T> result2 = invokePlayer(round.getPlayer2(), gameParams);
 	    final WINNER winner = calculateWinner(result1, result2);
 	    
-	    RoundResult<T> result = new RoundResult<T>(result1, result2, winner);
+	    FaceOffRoundResult<T> result = new FaceOffRoundResult<T>(result1, result2, winner);
 	    
 	    listener.onRoundEnd(result);
 	    return result;
 	}
 	
-	private WINNER calculateWinner(PlayerResult<T> result1,PlayerResult<T> result2){
+	private WINNER calculateWinner(PlayerInvocationResult<T> result1,PlayerInvocationResult<T> result2){
 	    final WINNER winner;
 	    if (result1.getHand() != null && result2.getHand() != null) {
 	        winner = game.calculateWinner(result1.getHand(), result2.getHand());
@@ -208,7 +236,7 @@ public class GameRunner<T> {
 	    return winner;
 	}
 
-	private PlayerResult<T> invokePlayer(final Player player, String gameParams) {
+	private PlayerInvocationResult<T> invokePlayer(final Player player, String gameParams) {
 		final String url = appendGameParams(player.getUrl(), gameParams);
 	    final HttpPost get = new HttpPost(url);
 	    final long invokeAt = System.currentTimeMillis();
@@ -224,26 +252,26 @@ public class GameRunner<T> {
 	        LOG.warn("Error contacting player " + player, e);
 	    }
 	
-	    PlayerResult<T> result = parsePlayerResponse(player, response);
+	    PlayerInvocationResult<T> result = parsePlayerResponse(player, response);
 	    result.setInvokedAt(invokeAt);
 	    result.setRespondedAt(respondedAt);
 	    return result;
 	}
 
-	private PlayerResult<T> parsePlayerResponse(Player player, HttpResponse response) {
-		final PlayerResult<T> result;
+	private PlayerInvocationResult<T> parsePlayerResponse(Player player, HttpResponse response) {
+		final PlayerInvocationResult<T> result;
 		if (response == null) {
-			result = new PlayerResult<T>(player, "Null response");
+			result = new PlayerInvocationResult<T>(player, "Null response");
 	    } else if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-	    	result = new PlayerResult<T>(player, "Non " + HttpStatus.SC_OK + " status response, instead got " + response.getStatusLine().getStatusCode());
+	    	result = new PlayerInvocationResult<T>(player, "Non " + HttpStatus.SC_OK + " status response, instead got " + response.getStatusLine().getStatusCode());
 	    } else {
 	    	result = parsePlayerResponse(player, response.getEntity());
 	    }
 	
 	    return result;
 	}
-	private PlayerResult<T> parsePlayerResponse(Player player, HttpEntity entity) {
-		PlayerResult<T> result;
+	private PlayerInvocationResult<T> parsePlayerResponse(Player player, HttpEntity entity) {
+		PlayerInvocationResult<T> result;
 	    if (entity != null) {
 	        InputStream is = null;
 	        try {
@@ -252,26 +280,26 @@ public class GameRunner<T> {
 	            result = parsePlayerResponse(player, hand);
 	        } catch (final IllegalStateException e) {
 	            LOG.warn("Error contacting player " + player, e);
-	            result = new PlayerResult<T>(player, "Can't contact player " + player, e);
+	            result = new PlayerInvocationResult<T>(player, "Can't contact player " + player, e);
 	        } catch (final IOException e) {
 	            LOG.warn("Error contacting player " + player, e);
-	            result = new PlayerResult<T>(player, "Can't contact player "  + player, e);
+	            result = new PlayerInvocationResult<T>(player, "Can't contact player "  + player, e);
 	        } finally {
 	            IOUtils.closeQuietly(is);
 	        }
 	    } else {
 	        LOG.warn("Empty body when contacting player " + player);
-	        result = new PlayerResult<T>(player, "Empty body when contacting player " + player);
+	        result = new PlayerInvocationResult<T>(player, "Empty body when contacting player " + player);
 	    }
         
         return result;
 	}
 
-	private PlayerResult<T> parsePlayerResponse(Player player, String hand) {
+	private PlayerInvocationResult<T> parsePlayerResponse(Player player, String hand) {
         try {
-            return new PlayerResult<T>(player, game.parseResponse(player, hand));
+            return new PlayerInvocationResult<T>(player, game.parseResponse(player, hand));
         } catch (final InvalidResponseException e) {
-       	 return new PlayerResult<T>(player, e);
+       	 return new PlayerInvocationResult<T>(player, e);
         }
 	}
 	private String appendGameParams(String url, String gameParams) {

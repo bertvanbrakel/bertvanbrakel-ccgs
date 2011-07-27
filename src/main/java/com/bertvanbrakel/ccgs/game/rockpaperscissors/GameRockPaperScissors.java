@@ -55,7 +55,7 @@ public class GameRockPaperScissors implements FaceOffGame<HAND> {
     }
 
 	@Override
-	public String getMatchParams() {
+	public String nextMatchParams() {
 		return null;
 	}
 	

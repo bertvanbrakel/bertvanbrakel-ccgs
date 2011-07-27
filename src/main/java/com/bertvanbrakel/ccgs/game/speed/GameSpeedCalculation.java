@@ -28,7 +28,7 @@ public class GameSpeedCalculation implements Game<CalculationResult>{
 	}
 
 	@Override
-	public String getMatchParams() {
+	public String nextMatchParams() {
 		return null;
 	}
 

@@ -7,7 +7,7 @@ import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.FaceOffRound;
-import com.bertvanbrakel.ccgs.model.RoundResult;
+import com.bertvanbrakel.ccgs.model.FaceOffRoundResult;
 
 public class LoggingListener<T> implements GameListener<T> {
 
@@ -47,7 +47,7 @@ public class LoggingListener<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onRoundEnd(RoundResult<T> roundResults) {
+	public void onRoundEnd(FaceOffRoundResult<T> roundResults) {
 		print(ROUND, "round end");
 	}
 

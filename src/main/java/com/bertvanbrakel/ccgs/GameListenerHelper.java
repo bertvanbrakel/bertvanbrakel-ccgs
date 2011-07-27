@@ -12,7 +12,7 @@ import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.FaceOffRound;
-import com.bertvanbrakel.ccgs.model.RoundResult;
+import com.bertvanbrakel.ccgs.model.FaceOffRoundResult;
 
 public final class GameListenerHelper<T> implements GameListener<T> {
 	
@@ -80,7 +80,7 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 	}
 
 	@Override
-	public void onRoundEnd(final RoundResult<T> results) {
+	public void onRoundEnd(final FaceOffRoundResult<T> results) {
 		invokeAll(new ListenerCallback<T>() {
 			@Override
 			public void invoke(GameListener<T> listener) {

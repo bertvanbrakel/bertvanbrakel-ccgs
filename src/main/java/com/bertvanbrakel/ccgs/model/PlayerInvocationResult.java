@@ -5,7 +5,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
-public class PlayerResult<T> {
+public class PlayerInvocationResult<T> {
     final Player player;
     final T hand;
     final Exception e;
@@ -15,25 +15,25 @@ public class PlayerResult<T> {
     private long respondedAt;
     private boolean timedOut = false;
 
-    public PlayerResult(final Player player,final T hand) {
+    public PlayerInvocationResult(final Player player,final T hand) {
         this.player = player;
         this.hand = hand;
         this.errorMsg = null;
         this.e = null;
     }
-    public PlayerResult(final Player player,final String errorMsg) {
+    public PlayerInvocationResult(final Player player,final String errorMsg) {
         this.player = player;
         this.hand = null;
         this.errorMsg = errorMsg;
         this.e = null;
     }
-    public PlayerResult(final Player player,final Exception e) {
+    public PlayerInvocationResult(final Player player,final Exception e) {
         this.player = player;
         this.hand = null;
         this.errorMsg = null;
         this.e = e;
     }
-    public PlayerResult(final Player player,final String errorMsg,final Exception e) {
+    public PlayerInvocationResult(final Player player,final String errorMsg,final Exception e) {
         this.player = player;
         this.hand = null;
         this.errorMsg = errorMsg;
