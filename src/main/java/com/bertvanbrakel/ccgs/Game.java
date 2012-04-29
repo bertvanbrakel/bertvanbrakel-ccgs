@@ -14,7 +14,7 @@ public interface Game<T> extends GameSummary {
     /**
      * Parse a players response to determine their move
      */
-    public T parseResponse(Player player, String response) throws InvalidResponseException;
+    public T parseResponse(Player player, Object response) throws InvalidResponseException;
 
 	/**
 	 * Calculate the winner of a round

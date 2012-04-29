@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.bertvanbrakel.ccgs.model.FaceOffRoundResult;
 import com.bertvanbrakel.ccgs.model.GameSummary;
-import com.bertvanbrakel.ccgs.model.Match;
 import com.bertvanbrakel.ccgs.model.MatchResults;
 import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.PlayerInvocationResult;
@@ -56,6 +55,11 @@ public class SimpleGameView<T> extends GameListenerAdapter<T> implements GameVie
 		players.add(player);
 	}
 
+	@Override
+	public void onPlayerLeft(Player player) {
+		players.remove(player);
+	}
+	
 	public View newMatchesView() {
 		return new SimpleView("matches") {
 			

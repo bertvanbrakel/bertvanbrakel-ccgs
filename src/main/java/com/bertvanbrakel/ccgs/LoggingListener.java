@@ -35,6 +35,11 @@ public class LoggingListener<T> implements GameListener<T> {
 	}
 
 	@Override
+	public void onPlayerLeft(Player player) {
+		print(PLAYER, "player left:" + player.getUrl());
+	}
+	
+	@Override
 	public void onMatchBegin(Match<T> match) {
 		print(MATCH, "begin match:" + match.getStartedAt());
 	}

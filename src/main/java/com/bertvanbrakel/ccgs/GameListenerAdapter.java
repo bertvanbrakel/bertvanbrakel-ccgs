@@ -19,6 +19,10 @@ public class GameListenerAdapter<T> implements GameListener<T> {
 	}
 
 	@Override
+	public void onPlayerLeft(Player player) {
+	}
+
+	@Override
 	public void onMatchBegin(Match<T> match) {
 	}
 
@@ -37,7 +41,4 @@ public class GameListenerAdapter<T> implements GameListener<T> {
 	@Override
 	public void onGameEnd(GameSummary game) {
 	}
-
-
-
 }

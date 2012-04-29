@@ -12,7 +12,9 @@ public interface GameListener<T> {
 	public void onGameBegin(GameSummary game);
 	
 	public void onPlayerJoined(Player player);
+	public void onPlayerLeft(Player player);
 
+	
 	public void onMatchBegin(Match<T> match);
 
 	public void onRoundBegin(FaceOffRound round);

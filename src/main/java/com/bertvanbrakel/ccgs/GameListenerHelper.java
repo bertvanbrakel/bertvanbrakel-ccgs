@@ -60,6 +60,16 @@ public final class GameListenerHelper<T> implements GameListener<T> {
 	}
 
 	@Override
+	public void onPlayerLeft(final Player player) {
+		invokeAll(new ListenerCallback<T>() {
+			@Override
+			public void invoke(GameListener<T> listener) {
+				listener.onPlayerLeft(player);
+			}
+		});
+	}
+
+	@Override
 	public void onMatchBegin(final Match<T> match) {
 		invokeAll(new ListenerCallback<T>() {
 			@Override

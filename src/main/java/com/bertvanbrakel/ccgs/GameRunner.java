@@ -54,6 +54,9 @@ public class GameRunner<T> {
 	
 	private HttpClient httpClient;
     private volatile boolean running = false;
+    
+    private ReadAdaptor<T> reader;
+    private WriteAdaptor<T> writer;
 
 	public GameRunner(Game<T> game) {
 		this(game, new GameOptions(), new GameListenerAdapter<T>());
@@ -84,6 +87,16 @@ public class GameRunner<T> {
 		if (added) {
 			listener.onPlayerJoined(player);
 		}
+	}
+	
+	public void unregisterPlayer(Player player){
+		if (LOG.isInfoEnabled()) {
+			LOG.info("unregistering player " + player);
+		}
+		boolean removed = registeredPlayers.remove(player);
+		if (removed) {
+			listener.onPlayerLeft(player);
+		}		
 	}
 
 	public Collection<Player> getPlayers() {
@@ -151,10 +164,15 @@ public class GameRunner<T> {
 	private void runMatch(FaceOffMatch<T> match) {
 		listener.onMatchBegin(match);
 		
+		//todo:game to do the rest?
+		//what about listener invoker?
+		game.playMatch( match );
+		
 		final Collection<FaceOffRoundResult<T>> results = new ArrayList<FaceOffRoundResult<T>>();
 		String matchParams = paramsToQuery( game.nextMatchParams() );
 		for (final FaceOffRound round : match.getRounds()) {
-			results.add(playFaceoffRound(round, matchParams));
+			FaceOffRoundResult<T> result = playFaceoffRound(round, matchParams);
+			results.add(result);
 		}
 		final long endedAt = System.currentTimeMillis();
 
@@ -297,7 +315,9 @@ public class GameRunner<T> {
 
 	private PlayerInvocationResult<T> parsePlayerResponse(Player player, String hand) {
         try {
-            return new PlayerInvocationResult<T>(player, game.parseResponse(player, hand));
+        	T response = game.parseResponse(player, hand);
+        	//reader.read(hand);
+            return new PlayerInvocationResult<T>(player,response);
         } catch (final InvalidResponseException e) {
        	 return new PlayerInvocationResult<T>(player, e);
         }
