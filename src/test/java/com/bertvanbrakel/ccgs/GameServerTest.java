@@ -1,11 +1,10 @@
 package com.bertvanbrakel.ccgs;
 
 import static com.bertvanbrakel.ccgs.Fluency.the;
-import static com.bertvanbrakel.lang.matcher.IsCollectionOf.containsItem;
-import static com.bertvanbrakel.lang.matcher.IsCollectionOf.containsOnlyItem;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+//import static org.junit.Assert.assertThat;
+import static org.codemucker.jmatch.Assert.assertThat;
+import static org.codemucker.jmatch.Assert.is;
+import static org.codemucker.jmatch.Assert.isEqualTo;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -25,9 +24,14 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeMatcher;
+import org.codemucker.jmatch.AList;
+import org.codemucker.jmatch.AbstractNotNullMatcher;
+import org.codemucker.jmatch.Description;
+import org.codemucker.jmatch.Expect;
+import org.codemucker.jmatch.MatchDiagnostics;
+import org.codemucker.jmatch.Matcher;
+import org.codemucker.testserver.TestServlet;
+import org.codemucker.testserver.capturing.CapturingTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,8 +42,7 @@ import com.bertvanbrakel.ccgs.model.Player;
 import com.bertvanbrakel.ccgs.model.PlayerResult;
 import com.bertvanbrakel.ccgs.model.Round;
 import com.bertvanbrakel.ccgs.model.RoundResult;
-import com.bertvanbrakel.testserver.TestServlet;
-import com.bertvanbrakel.testserver.capturing.CapturingTestServer;
+
 public class GameServerTest {
 
     final GameServer<HAND> server = new GameServer<HAND>(new GameRockPaperScissors());
@@ -89,8 +92,8 @@ public class GameServerTest {
         final HttpResponse response = registerCallback(callbackURL);
         GameRunner<HAND> runner = server.getGameRunner();
         
-        assertThat(the(response.getStatusLine().getStatusCode()), is(equalTo(HTTP_OK)));
-        assertThat(runner.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
+        Expect.that(response.getStatusLine().getStatusCode()).isEqualTo(HTTP_OK);
+        Expect.that(runner.getPlayers()).is(AList.withOnly(APlayer.with().url(callbackURL)));
     }
 
     private HttpResponse makeRequest(final String url)
@@ -119,9 +122,11 @@ public class GameServerTest {
         for (int i = 0; i < 5; i++) {
             final HttpResponse response = registerCallback(callbackURL);
             
-            assertThat(the(response.getStatusLine().getStatusCode()), is(equalTo(HTTP_OK)));
+            assertThat(the(response.getStatusLine().getStatusCode()), is(isEqualTo(HTTP_OK)));
         }
-        assertThat(runner.getPlayers(),containsOnlyItem(equalTo(new Player(callbackURL))));
+        Expect
+    		.that(runner.getPlayers())
+    		.is(AList.withOnly(APlayer.with().url(callbackURL)));
     }
 
     @Test
@@ -135,10 +140,13 @@ public class GameServerTest {
         registerCallback(url3);
 
         GameRunner<HAND> runner = server.getGameRunner();
-        assertThat(runner.getPlayers().size(),is(equalTo(3)));
-        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url1))));
-        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url2))));
-        assertThat(runner.getPlayers(),containsItem(equalTo(new Player(url3))));
+        Expect
+        	.that(runner.getPlayers())
+        	.is(AList.inAnyOrder()
+        			.withOnly(APlayer.with().url(url1))
+        			.and(APlayer.with().url(url2))
+        			.and(APlayer.with().url(url3)));
+
     }
 
     @Test
@@ -147,9 +155,11 @@ public class GameServerTest {
         registerCallback(url);
         
         GameRunner<HAND> runner = server.getGameRunner();
-        final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
-        assertThat(rounds.size(),is(equalTo(1)));
-        assertThat(rounds.get(0),is(equalTo(new Round(new Player(url)))));
+        Expect
+    		.that(runner.generateRounds(runner.getPlayerSnapshot()))
+    		.is(AList.withOnly(ARound.with()
+    				.player1(APlayer.with().url(url))
+    				.player2(APlayer.isNull())));
     }
 
     /**
@@ -172,11 +182,15 @@ public class GameServerTest {
         GameRunner<HAND> runner = server.getGameRunner();
         
         final List<Round> rounds = runner.generateRounds(runner.getPlayerSnapshot());
-        assertThat(rounds.size(),is(equalTo(3)));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url2)))));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url1),new Player(url3)))));
-        assertThat(rounds,containsItem(equalTo(new Round(new Player(url2),new Player(url3)))));
-    }
+        
+        Expect
+        	.that(rounds)
+        	.is(AList
+    			.inAnyOrder()
+    			.withOnly(ARound.with().player1Url(url1).player2Url(url2))
+    			.and(ARound.with().player1Url(url1).player2Url(url3))
+    			.and(ARound.with().player1Url(url2).player2Url(url3)));	
+       }
 
 
     @Test
@@ -219,25 +233,25 @@ public class GameServerTest {
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysScissorsPlayer), gameParams);
-                assertThat(players.getTotalNumRequests(),is(equalTo(2)));
+                Expect.that(players.getTotalNumRequests()).isEqualTo(2);
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysScissorsResult,WINNER.ONE),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysRockPlayer), gameParams);
-                assertThat(players.getTotalNumRequests(),is(equalTo(2)));
+                Expect.that(players.getTotalNumRequests()).isEqualTo(2);
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysRockResult,WINNER.TWO),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = runner.playRound(new Round(alwaysRockPlayer,alwaysRockPlayer), gameParams);
-                assertThat(players.getTotalNumRequests(),is(equalTo(2)));
+                assertThat(players.getTotalNumRequests(),is(isEqualTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysRockResult,alwaysRockResult,WINNER.DRAW),ignoreFields));
             }
             players.resetCaptures();
             {
                 final RoundResult<HAND> result = runner.playRound(new Round(alwaysScissorsPlayer,alwaysScissorsPlayer), gameParams);
-                assertThat(players.getTotalNumRequests(),is(equalTo(2)));
+                assertThat(players.getTotalNumRequests(),is(isEqualTo(2)));
                 assertThat(result,isEqualToIgnoringFields(new RoundResult<HAND>(alwaysScissorsResult,alwaysScissorsResult,WINNER.DRAW),ignoreFields));
             }
         } finally {
@@ -247,20 +261,21 @@ public class GameServerTest {
     
 	private static <T> Matcher<RoundResult<T>> isEqualToIgnoringFields(
 			final RoundResult<T> expect, final String[] excludingFields) {
-		return new TypeSafeMatcher<RoundResult<T>>() {
+		return new AbstractNotNullMatcher<RoundResult<T>>() {
 
 			@Override
 			public void describeTo(Description desc) {
-				desc.appendText(ToStringBuilder.reflectionToString(expect,ToStringStyle.MULTI_LINE_STYLE));
+				desc.text(ToStringBuilder.reflectionToString(expect,ToStringStyle.MULTI_LINE_STYLE));
 			}
 
 			@Override
-			public boolean matchesSafely(RoundResult<T> actual) {
+			public boolean matchesSafely(RoundResult<T> actual, MatchDiagnostics diag) {
 				boolean player1Equals = EqualsBuilder.reflectionEquals(expect.getPlayer1(), actual.getPlayer1(), excludingFields);
 				boolean player2Equals = EqualsBuilder.reflectionEquals(expect.getPlayer2(), actual.getPlayer2(), excludingFields);
 				boolean otherEquals = EqualsBuilder.reflectionEquals(expect, actual, new String[]{"player1","player2"});
 				return player1Equals && player2Equals && otherEquals;
 			}
+
 		};
 	}
 

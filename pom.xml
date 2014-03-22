@@ -5,6 +5,7 @@
         <groupId>com.bertvanbrakel</groupId>
         <artifactId>bertvanbrakel-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../bertvanbrakel-parent/pom.xml</relativePath>
     </parent>
     <groupId>com.bertvanbrakel.ccgs</groupId>
     <artifactId>bertvanbrakel-ccgs</artifactId>
@@ -12,9 +13,19 @@
     <name>com.bertvanbrakel - Code Challenge Game Server</name>
     <description>A game server for playing coding challenge games</description>
     <dependencies>
-          <dependency>
-			<groupId>com.bertvanbrakel</groupId>
-			<artifactId>bertvanbrakel-testserver</artifactId>
+        <dependency>
+            <groupId>org.codemucker</groupId>
+            <artifactId>codemucker-jmatch</artifactId>
+            <version>${project.version}</version>
+        </dependency>   
+        <dependency>
+            <groupId>org.codemucker</groupId>
+            <artifactId>codemucker-testfirst</artifactId>
+            <version>${project.version}</version>
+        </dependency>   
+        <dependency>
+			<groupId>org.codemucker</groupId>
+			<artifactId>codemucker-testserver</artifactId>
 			<version>${project.version}</version>
 		</dependency>		  
         <dependency>
